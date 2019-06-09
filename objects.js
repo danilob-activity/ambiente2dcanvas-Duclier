@@ -1,6 +1,12 @@
 //predefined colors
 white = "#ffffff65"; //com transparencia
-black = "#000000"
+black = "#000000";
+purple = "#d7bde2";
+blue = "#a9cce3";
+green = "#7dcea0";
+yellow ="#f4d03f";
+orange ="#f5b041";
+gray ="#f5b041";
 
 SEGMENTS_CIRCLE = 30;
 
@@ -11,8 +17,10 @@ function Box(center = [0, 0, 1], height = 50, width = 50) {
     this.T = identity(); //matriz 3x3 de translação 
     this.R = identity(); //matriz 3x3 de rotação
     this.S = identity(); //matriz 3x3 de escala
+    this.points = [];
     this.fill = white; //cor de preenchimento -> aceita cor hex, ex.: this.fill = "#4592af"
     this.stroke = black; //cor da borda -> aceita cor hex, ex.: this.stroke = "#a34a28"
+    this.original_stroke = this.stroke;
     this.name = "";
 }
 
@@ -25,22 +33,57 @@ Box.prototype.setTranslate = function(x, y) {
 }
 
 Box.prototype.getTranslate = function() {
-    return [this.T[0][2], this.T[1][2], 1];
+    return this.T;
 }
 
 Box.prototype.setRotate = function(theta) {
     this.R = rotate(theta);
 }
 
+Box.prototype.getRotate = function() {
+    return this.R;
+}
 
 Box.prototype.setScale = function(x, y) {
     this.S = scale(x, y);
 }
 
+Box.prototype.getScale = function() {
+    return this.S;
+}
+
+Box.prototype.setFill = function(colors){
+    this.fill = colors;
+}
+
+Box.prototype.setStroke = function(colors){
+    this.stroke = colors;
+    this.original_stroke = this.stroke;
+}
+
+Box.prototype.intersection =function(x,y){
+    var SRT = inverseTRS(this.T,this.R, this.S);
+    SRT = mult(SRT, transformUsual(WIDTH,HEIGHT));
+    //mouse point
+    var mp = [x,y,1];
+    mp = multVec(SRT, mp);
+    
+    var pontos_tranformados = [];
+
+    for(var i = 0 ; i < this.points.length; i++){
+         pontos_tranformados[i] = multVec(SRT, this.points[i]);
+    }
+    if((pontos_tranformados[0][0] >= mp[0]) && (pontos_tranformados[1][0] <= mp[0]) && 
+    ((pontos_tranformados[0][1] >= mp[1]) && (pontos_tranformados[2][1] <= mp[1]))){
+             return true;
+    }else{
+         return false;
+    }
+}
 Box.prototype.draw = function(canv = ctx) { //requer o contexto de desenho
     //pega matriz de tranformação de coordenadas canônicas para coordenadas do canvas
     var M = transformCanvas(WIDTH, HEIGHT);
-    var Mg = mult(M, mult(mult(this.R, this.S), this.T));
+    var Mg = mult(M, mult(mult(this.T, this.R), this.S));
     canv.lineWidth = 2; //largura da borda
     canv.strokeStyle = this.stroke;
     canv.fillStyle = this.fill;
@@ -61,6 +104,7 @@ Box.prototype.draw = function(canv = ctx) { //requer o contexto de desenho
     canv.fill(); //aplica cor de preenchimento
     canv.strokeStyle = this.stroke;
     canv.stroke(); //aplica cor de contorno
+    this.points = points;
 
     //desenho do nome
     canv.beginPath();
@@ -74,11 +118,13 @@ Box.prototype.draw = function(canv = ctx) { //requer o contexto de desenho
 function Circle(center = [0, 0, 1], radius = 50) {
     this.center = center;
     this.radius = radius;
+     this.points = [];
     this.T = identity(); //matriz 3x3 de translação 
     this.R = identity(); //matriz 3x3 de rotação
     this.S = identity(); //matriz 3x3 de escala
     this.fill = white; //cor de preenchimento -> aceita cor hex, ex.: this.fill = "#4592af"
     this.stroke = black; //cor da borda -> aceita cor hex, ex.: this.stroke = "#a34a28"
+    this.original_stroke = this.stroke;
     this.name = "";
 }
 
@@ -88,6 +134,7 @@ Circle.prototype.setName = function(name) {
 
 Circle.prototype.setTranslate = function(x, y) {
     this.T = translate(x, y);
+    this.center = [x,y];
 }
 
 Circle.prototype.getTranslate = function() {
@@ -110,6 +157,23 @@ Circle.prototype.setRadius = function(r) {
 Circle.prototype.setFill = function(fill) {
     this.fill = fill;
 }
+
+Circle.prototype.setStroke = function(colors){
+    this.stroke = colors;
+    this.original_stroke = this.stroke;
+}
+
+Circle.prototype.intersection = function(x,y){
+    var SRT = inverseTRS(this.T,this.R,this.S);
+    //mouse point
+    var mp = [x,y,1];
+    mp = multVec(SRT, mp);
+    mp = multVec(transformUsual(WIDTH,HEIGHT),mp);
+
+    return distance(this.radius, mp);
+}
+
+
 
 Circle.prototype.draw = function(canv = ctx) { //requer o contexto de desenho
     //pega matriz de tranformação de coordenadas canônicas para coordenadas do canvas
@@ -134,6 +198,7 @@ Circle.prototype.draw = function(canv = ctx) { //requer o contexto de desenho
     canv.fill(); //aplica cor de preenchimento
     canv.strokeStyle = this.stroke;
     canv.stroke(); //aplica cor de contorno
+    this.points = points;
 
     //desenho do nome
     canv.beginPath();
