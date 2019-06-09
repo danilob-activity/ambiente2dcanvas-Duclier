@@ -10,6 +10,8 @@ canvas.width = WIDTH;
 canvas.height = HEIGHT;
 //faz o desenho do triângulo
 
+var flag = 0 ;
+
 var objects = []; //lista de objetos
 var objectSelected = null;
 
@@ -21,6 +23,7 @@ function drawCanvas() {
     }
     drawAxis();
 }
+
 
 function drawAxis() {
     ctx.strokeStyle = "#f3c1c6";
@@ -51,6 +54,62 @@ function pushBox() {
 
 }
 
+
+
+function checkCollisions(event){
+    
+    for (var i = 0; i < objects.length; i++) {
+       var test = objects[i].intersection(event.offsetX,event.offsetY);
+       if(test){
+         
+            objectSelected = objects[i];
+           
+            objectSelected.setStroke("green");
+            drawCanvas();
+            break;
+        }
+    };
+}
+function mouseDown(event){
+    //console.log("Down,  "  +event.offsetX, event.offsetY);
+    for (var i = 0; i < objects.length; i++) {
+       var test = objects[i].intersection(event.offsetX,event.offsetY);
+       if(test){
+            //console.log("test entrou");
+            objectSelected = objects[i];
+            //console.log(objectSelected);
+            objectSelected.stroke = "green";
+            flag = 1 ;
+            drawCanvas();
+            break;
+        }
+    };
+}
+function mouseUp(event){
+   
+    objectSelected.stroke = objectSelected.original_stroke;
+    flag = 0 ;
+    
+    drawCanvas();
+}
+function mouseMove(event){
+    
+    if(flag == 1){
+        //console.log("asd");
+        var x = event.offsetX;
+        var y = event.offsetY;
+
+        
+        var position = multVec(transformUsual(WIDTH,HEIGHT), [x,y,1]);
+
+        objectSelected.setTranslate(position[0], position[1]);
+        
+        drawCanvas();
+    }
+
+}
+
+
 function pushCircle() {
     var obj = new Circle();
     objects.push(obj);
@@ -70,7 +129,12 @@ function updatePosition() {
         try {
             posx = parseFloat(document.getElementById("posx").value);
             posy = parseFloat(document.getElementById("posy").value);
+            angle = parseFloat(document.getElementById("angle").value);
+            scale_x = parseFloat(document.getElementById("scale_x").value);
+            scale_y = parseFloat(document.getElementById("scale_y").value);
             objectSelected.setTranslate(posx, posy);
+            objectSelected.setRotate(angle);
+            objectSelected.setScale(scale_x,scale_y);
             drawCanvas();
         } catch (error) {
             alert(error);
